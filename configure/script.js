@@ -1,7 +1,7 @@
 const appId = "nuttys-ytmdesktop-widget";
 const appName = "Music Player Widget";
 const appVersion = "1.0.0";
-const widgetURL = "https://LostXC.github.io/MusicPlayerWidgetEseninocafe";
+const widgetURL = "https://eseninocafe.github.io/music-player/";
 const YTMD = "http://localhost:9863/api/v1";
 
 const $ = (id) => document.getElementById(id);
