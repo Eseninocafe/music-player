@@ -110,7 +110,13 @@ function loadUrl(input) {
 	try { url = new URL(input.value.trim()); } catch (e) {}
 	const pastedToken = url && url.searchParams.get('token');
 	input.value = '';
-	if (!pastedToken) { input.placeholder = 'Not a widget URL'; return; }
+	clearTimeout(input.placeholderTimer);
+	if (!pastedToken) {
+		// Says so for a moment, like "Copied", then asks again (typing resets it sooner)
+		input.placeholder = 'Not a widget URL';
+		input.placeholderTimer = setTimeout(() => { input.placeholder = 'Paste your widget URL'; }, 1500);
+		return;
+	}
 	input.placeholder = 'Paste your widget URL';
 	openSettings(pastedToken, url.searchParams.get('stand') === '1', url.searchParams.get('sign') || '');
 }
