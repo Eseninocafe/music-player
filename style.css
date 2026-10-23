@@ -2,11 +2,15 @@
 	margin: 0;
 	padding: 0;
 	box-sizing: border-box;
-	--primary-text: #000000;
-	--bg-color: transparent;
-	--border-radius: 20px;
-	--stroke-color: #000000;
-	--fill-color: #ffffff;
+}
+
+/* Card tokens — the card has no dark mode; script.js reads these for the canvas outline */
+:root {
+	--black: #000000;
+	--white: #FFFFFF;
+	--card-surface: var(--white);
+	--card-stroke: var(--black);
+	--card-text: var(--black);
 }
 
 html, body {
@@ -14,8 +18,11 @@ html, body {
 	height: 100vh;
 	font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	letter-spacing: 0.001em;
-	color: var(--primary-text);
-	background: var(--bg-color) !important;
+	/* macOS font smoothing thickens strokes — a 500 renders like a 600. Off, so the weights match Figma. */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	color: var(--card-text);
+	background: transparent !important;
 	overflow: hidden;
 	display: flex;
 	align-items: center;
@@ -26,25 +33,28 @@ html, body {
 	display: none;
 }
 
+/* Nothing scales: the widget is drawn at its design size. Without the stand the
+   card fills the source's width with 32px clear all round (the outline boils in
+   that margin), at a fixed height: 192px tall in all, or 172 compact. */
 #mainContainer {
 	position: relative;
+	width: 100%;
+	padding: 32px;
 	background: transparent;
-	padding: 0;
-	box-sizing: border-box;
 	transform: translateZ(0);
 	will-change: transform;
 }
 
 .sub-card-wrapper {
 	position: relative;
-	width: 485px;
-	height: 120px;
+	width: 100%;
+	height: 128px;
 }
 
 .sub-border-canvas {
 	position: absolute;
-	top: -30px; 
-	left: -30px;
+	top: -32px;
+	left: -32px;
 	z-index: 0;
 	pointer-events: none;
 }
@@ -55,19 +65,18 @@ html, body {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
-	padding: 12px;
-	gap: 10px;
+	padding: 14px;
+	gap: 12px;
 	width: 100%;
 	height: 100%;
-	border-radius: var(--border-radius);
 	opacity: 0;
 }
 
 .album-art {
 	display: block;
-	width: 96px;
-	height: 96px;
-	border-radius: 10px;
+	width: 100px;
+	height: 100px;
+	border-radius: 12px;
 	flex-shrink: 0;
 	object-fit: cover;
 	background-color: #e51e38;
@@ -76,17 +85,21 @@ html, body {
 .info-area {
 	display: flex;
 	flex-direction: column;
+	justify-content: center;
 	align-items: flex-start;
-	width: 352px;
-	height: 96px;
-	gap: 6px;
-	flex-shrink: 0;
+	flex: 1;
+	min-width: 0;
+	height: 100px;
+	gap: 4px;
 	padding-right: 4px;
 }
 
+/* Figma's title sits in a 36px row with a 39px line; the wrapper is the full
+   line tall (pulled back to 36 by the margins) so its clip doesn't cut descenders. */
 .title-wrapper {
 	width: 100%;
-	height: 36px;
+	height: 39px;
+	margin: -1.5px 0;
 	overflow: hidden;
 	white-space: nowrap;
 	/* soft edge fade for the marquee; the gradient itself is written inline by JS */
@@ -97,15 +110,15 @@ html, body {
 .title {
 	display: inline-flex;   /* holds the two smooth-wrap copies side by side */
 	font-weight: 600;
-	font-size: 30px;
-	line-height: 36px;
-	color: var(--primary-text);
+	font-size: 32px;
+	line-height: 39px;
+	color: var(--card-text);
 	will-change: transform;
 }
 
 .artist-wrapper {
 	width: 100%;
-	height: 24px;
+	height: 28px;
 	overflow: hidden;
 	white-space: nowrap;
 	-webkit-mask-repeat: no-repeat;
@@ -115,9 +128,9 @@ html, body {
 .artist {
 	display: inline-flex;
 	font-weight: 500;
-	font-size: 20px;
-	line-height: 24px;
-	color: var(--primary-text);
+	font-size: 22px;
+	line-height: 28px;
+	color: var(--card-text);
 	will-change: transform;
 }
 
@@ -132,35 +145,38 @@ html, body {
 	flex-direction: row;
 	align-items: center;
 	width: 100%;
-	height: 24px;
+	height: 28px;
 	gap: 8px; /* Buffer space for the times and progress line */
 }
 
 .time {
 	font-weight: 500;
-	font-size: 20px;
-	line-height: 24px;
-	color: var(--primary-text);
+	font-size: 22px;
+	line-height: 28px;
+	color: var(--card-text);
 	flex-shrink: 0; /* Prevents the text from squishing or wrapping */
 	font-variant-numeric: tabular-nums; /* Keeps number widths consistent so the bar doesn't jitter while playing */
 }
 
-#timeCurrent { 
-	width: max-content; 
-	text-align: left; 
+#timeCurrent {
+	width: max-content;
+	text-align: left;
 }
 
-#timeRemaining { 
-	width: max-content; 
-	text-align: right; 
+#timeRemaining {
+	width: max-content;
+	text-align: right;
 }
 
+/* Figma's track: the line starts 8px after the time (its round cap reaching back
+   4px into the 4px margin), and the dot stops 8px short of the remaining time. */
 .progress-bar-container {
 	position: relative;
 	display: flex;
 	align-items: center;
 	flex-grow: 1;
-	height: 24px;
+	height: 16px;
+	margin: 0 8px 0 4px;
 }
 
 #progressSvg {
@@ -173,17 +189,91 @@ html, body {
 	overflow: visible;
 }
 
+#progressPath {
+	stroke: var(--card-stroke);
+}
+
 .progress-thumb {
 	position: absolute;
 	left: 0%;
-	width: 14px;
-	height: 14px;
-	background-color: var(--stroke-color);
+	width: 16px;
+	height: 16px;
+	background-color: var(--card-stroke);
 	border-radius: 50%;
 	z-index: 2;
 	transform: translateX(-50%);
 	will-change: left;
 }
+
+/* ── size=compact: a source under 192px tall (172 is its full height) ── */
+body.compact .sub-card-wrapper { height: 108px; }
+body.compact .album-art { width: 80px; height: 80px; }
+body.compact .info-area { height: 80px; }
+body.compact .title-wrapper { height: 31px; }
+body.compact .title { font-size: 26px; line-height: 31px; }
+body.compact .artist-wrapper { height: 22px; }
+body.compact .artist { font-size: 18px; line-height: 22px; }
+body.compact .progress-area { height: 22px; }
+body.compact .time { font-size: 18px; line-height: 22px; }
+
+/* ── The stand (?stand=1, never compact): the 733×841 stall, card in its counter ── */
+.stall, .sign, .counter { display: none; }
+
+body.stand #mainContainer {
+	flex: none;
+	width: 733px;
+	height: 841px;
+	padding: 0;
+}
+
+body.stand .stall,
+body.stand .sign {
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+
+.sign line {
+	stroke: var(--card-stroke);
+	stroke-width: 8;
+	stroke-linecap: round;
+}
+
+.sign rect {
+	fill: var(--card-surface);
+	stroke: var(--card-stroke);
+	stroke-width: 8;
+}
+
+.sign text {
+	font-family: "Inter", sans-serif;
+	font-weight: 700;
+	font-size: 32px;
+	letter-spacing: 0;
+	fill: var(--card-text);
+}
+
+/* Frame 26: covers the bottom of the posts; the card sits 32px in from its outer edge */
+body.stand .counter {
+	display: block;
+	position: absolute;
+	left: 62px;
+	top: 649px;
+	width: 608px;
+	height: 192px;
+	border: 8px solid var(--card-stroke);
+	border-radius: 8px;
+	background: var(--card-surface);
+}
+
+body.stand .sub-card-wrapper {
+	position: absolute;
+	left: 94px;
+	top: 681px;
+	width: 544px;
+}
+
 
 /* ==========================================================
    ADDED MISSING ELEMENTS FOR NUTTY'S AUTH & STATUS POPUPS

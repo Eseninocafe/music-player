@@ -1,40 +1,82 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
-	<title>Configure</title>
+	<title>Music Player</title>
 	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="shortcut icon" href="#" />
+	<!-- The Inter build Figma uses (Google Fonts serves a newer one whose letter widths differ) -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.15/500.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.15/600.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.15/700.css">
 	<link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-	<div id="mainContainer">
-		<div id="connectBox">
-			<img src="logo.png" width="60%">
-			<label>
-				<br><br>
-				<button onclick="RequestToken()">Connect</button>
-				<br><br>
-				<button id="instructionsButton" onclick="OpenInstructions()">Instructions</button>
-			</label>
-		</div>
-		<div id="authorizationBox">
-			<label id="authorizationCode">
-				2305
-			</label>
-			<label id="authorizationComplete">
-				<img src="logo.png" width="60%">
-				<br><br>
-				<span style="font-weight: 500; font-size: 30px;">Authorization complete</span>
-			</label>
-			<button id="copyURLButton" onclick="CopyToURL()" disabled="true">Awaiting approval</button>
-		</div>
-		<div id="errorBox">
-			<label style="font-size: 30px; font-weight: 600;">Error <span id="errorCode">69</span></label>
-			<br>
-			<span id="errorMessage">You died lmao. You died lmao. You died lmao. You died lmao. You died lmao. You died lmao.You died lmao. You died lmao.</span>
-			<br><br>
-			
-			<button id="closeErrorBox" onclick="CloseErrorBox()">Okay</button>
-		</div>
+	<!-- before first paint, so a saved light theme doesn't flash dark -->
+	<script>try { if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode'); } catch (e) {}</script>
+
+	<div class="page">
+		<header class="app-label">
+			<h1>Music Player</h1>
+			<button id="themeToggle" class="icon-btn" type="button" title="Toggle theme" aria-label="Toggle theme">
+				<span id="themeIcon" class="icon"></span>
+			</button>
+		</header>
+
+		<!-- Waiting for the code to be approved in YTMDesktop -->
+		<main id="authScreen" class="screen center" hidden>
+			<div class="message">
+				<h2>Authorize YouTube Music</h2>
+				<p class="secondary">Approve this code when it pops up:</p>
+				<div class="code"><span id="authCode"></span><span class="bar"></span></div>
+			</div>
+		</main>
+
+		<!-- YTMDesktop couldn't be reached, or answered with an error -->
+		<main id="errorScreen" class="screen center" hidden>
+			<div class="error">
+				<div class="message">
+					<h2 id="errorTitle" class="big">YTMDesktop not reachable</h2>
+					<p id="errorMessage" class="secondary">Make sure YTMDesktop is open with “Companion Server” and “Allow browser communication” turned on.</p>
+					<button id="retryBtn" class="btn" type="button"><span class="btn-label">Retry</span><span class="icon icon-retry"></span></button>
+				</div>
+				<div class="load-row">
+					<label class="text-field"><input class="url-input" type="text" placeholder="Paste your widget URL" spellcheck="false" autocomplete="off"><span class="bar"></span></label>
+					<button class="btn load-btn" type="button"><span class="btn-label">Load</span><span class="icon icon-enter"></span></button>
+				</div>
+			</div>
+		</main>
+
+		<!-- Authorized: the widget's settings, and the widget itself as the preview -->
+		<main id="configScreen" class="screen" hidden>
+			<div class="controls">
+				<div class="url-actions">
+					<button id="copyUrlBtn" class="btn" type="button"><span id="copyUrlLabel" class="btn-label">Copy Widget URL</span><span class="icon icon-copy"></span></button>
+					<div class="load-row">
+						<label class="text-field"><input class="url-input" type="text" placeholder="Paste your widget URL" spellcheck="false" autocomplete="off"><span class="bar"></span></label>
+						<button class="btn load-btn" type="button"><span class="btn-label">Load</span><span class="icon icon-enter"></span></button>
+					</div>
+				</div>
+				<div class="toggle-field">
+					<div class="toggle-text">
+						<label for="standToggle">Cafe Stand</label>
+						<span class="hint">Encase music player in a cafe stall</span>
+					</div>
+					<label class="toggle">
+						<input id="standToggle" type="checkbox">
+						<span class="toggle-box"><span class="icon icon-check"></span></span>
+					</label>
+				</div>
+				<label id="signField" class="text-field">
+					<input id="signInput" type="text" maxlength="24" placeholder="Opening Soon" spellcheck="false" autocomplete="off">
+					<span class="bar"></span>
+				</label>
+			</div>
+			<div id="fit" class="fit"><iframe id="preview" class="preview" title="Widget preview"></iframe></div>
+		</main>
 	</div>
+
+	<script src="../sign.js"></script>
+	<script src="./script.js"></script>
 </body>
-<script src="./script.js"></script>
+</html>

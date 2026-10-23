@@ -1,115 +1,326 @@
-* {
-	--corner-radius: 10px;
-	--padding: 20px;
-	font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+/* Primitives (grays) */
+:root {
+	--black: #000000;
+	--white: #FFFFFF;
+	--gray-100: #ECECEC;
+	--gray-200: #DEDEDE;
+	--gray-800: #3E3E3E;
+	--gray-900: #2A2A2A;
+
+	/* card — the same in both themes */
+	--card-surface: var(--white);
+	--card-stroke: var(--black);
+	--card-text: var(--black);
+}
+
+/* theme=dark (default) — app · button · icon-button */
+:root {
+	--surface: var(--gray-900);
+	--sidebar-bg: var(--black);
+	--text-primary: var(--white);
+	--text-secondary: var(--gray-200);
+	--btn-content: var(--black);
+	--btn-bg: var(--white);
+	--btn-bg-hover: var(--gray-100);
+	--btn-bg-pressed: var(--gray-200);
+	--icon-btn-content: var(--white);
+	--icon-btn-bg-hover: var(--gray-900);
+	--icon-btn-bg-pressed: var(--gray-800);
+}
+
+/* theme=light */
+body.light-mode {
+	--surface: var(--white);
+	--sidebar-bg: var(--white);
+	--text-primary: var(--black);
+	--text-secondary: var(--gray-800);
+	--btn-content: var(--white);
+	--btn-bg: var(--black);
+	--btn-bg-hover: var(--gray-900);
+	--btn-bg-pressed: var(--gray-800);
+	--icon-btn-content: var(--black);
+	--icon-btn-bg-hover: var(--gray-100);
+	--icon-btn-bg-pressed: var(--gray-200);
 }
 
 body {
-	margin: 0px;
-	color: white;
+	/* macOS font smoothing thickens strokes — a 500 renders like a 600. Off, so the weights match Figma. */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	font-family: 'Inter', -apple-system, system-ui, sans-serif;
+	background: var(--surface);   /* the app's surface: this page has no sidebar */
+	color: var(--text-primary);
+	min-height: 100vh;
+}
+
+/* One centred column. The header (Frame 491: 14px round a 604px row) is the
+   settings list's width on every screen; the list sits right under it. */
+.page {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding-bottom: 14px;
+}
+
+.app-label {
+	position: relative;
+	z-index: 1;   /* above the centred screens, which cover the window */
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 632px;   /* the settings list's width */
+	max-width: 100%;
+	padding: 14px;
+}
+
+.app-label h1 {
 	font-size: 24px;
+	line-height: 29px;
+	font-weight: 600;
+	text-transform: uppercase;
 }
 
-#mainContainer {
-	position: absolute;
-	width: 100vw;
-	height: 100vh;
-	margin: 0px;
-	background-color: #282828;
-}
-
-#errorBox {
-	background-color: #6d0b0b;
-	border-radius: var(--corner-radius);
-	padding: calc(var(--padding)) calc(var(--padding)*2);
-	position: absolute;
-	left: 50%;
-	top: 50%;	
-	transform: translateX(-50%) translateY(-50%);
-	filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 1));
-	display: none;
-}
-
-#connectBox{
-	background-color: #181818;
-	border-radius: var(--corner-radius);
-	padding: calc(var(--padding)*3) calc(var(--padding)*3);
-	position: absolute;
-	left: 50%;
-	top: 50%;	
-	transform: translateX(-50%) translateY(-50%);
-	filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 1));
-	width: 400px;
-	text-align: center;
-}
-
-#authorizationBox {
-	background-color: #252525;
-	border-radius: var(--corner-radius);
-	padding: calc(var(--padding)*3) calc(var(--padding)*3);
-	position: absolute;
-	left: 50%;
-	top: 50%;	
-	transform: translateX(-50%) translateY(-50%);
-	filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 1));
-	width: 400px;
-	display: none;
-}
-
-#authorizationCode {
+/* ── icons: mask images painted with currentColor ── */
+.icon {
 	display: block;
-	text-align: center;
-	font-size: 80px;
-	font-weight: 700;
-	padding-left: 30px;
-	padding-bottom: 40px;
-	letter-spacing: 30px;
-	color: #f44336;
+	flex: none;
+	width: 32px;
+	height: 32px;
+	background: currentColor;
+	-webkit-mask: var(--icon) center / contain no-repeat;
+	mask: var(--icon) center / contain no-repeat;
 }
+.icon-copy { --icon: url(../assets/icons/copy.svg); }
+.icon-enter { --icon: url(../assets/icons/enter.svg); }
+.icon-retry { --icon: url(../assets/icons/retry.svg); }
+.icon-check { --icon: url(../assets/icons/checkmark.svg); }
+#themeIcon { --icon: url(../assets/icons/moon.svg); }
+body.light-mode #themeIcon { --icon: url(../assets/icons/sun.svg); }
 
-#authorizationComplete {
-	display: block;
-	text-align: center;
-	padding-bottom: 40px;
-	display: none;
-}
-
-button {
-	font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-	font-size: 24px;
-	font-weight: 500;
-	background-color: #f44336;
-	color: white;
-	opacity: 0.8;
-	border-width: 0;
-	border-radius: var(--corner-radius);
-	padding: calc(var(--padding)/2) var(--padding);
-	width: 100%;
-}
-
-button:hover {
-	opacity: 1;
+.icon-btn {
+	flex: none;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--icon-btn-content);
 	cursor: pointer;
 }
+.icon-btn:hover { background: var(--icon-btn-bg-hover); }
+.icon-btn:active { background: var(--icon-btn-bg-pressed); }
 
-#instructionsButton, #donateButton {
-	background-color: #2e2e2e;	
+/* button (icon-position=trailing) */
+.btn {
+	flex: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	height: 40px;
+	padding: 4px;
+	border: none;
+	border-radius: 8px;
+	background: var(--btn-bg);
+	color: var(--btn-content);
+	font-family: inherit;
+	font-size: 18px;
+	line-height: 22px;
+	font-weight: 600;
+	cursor: pointer;
 }
+.btn:hover { background: var(--btn-bg-hover); }
+.btn:active { background: var(--btn-bg-pressed); }
+.btn-label { padding-left: 8px; }
+/* "Copied" shows alone, centred */
+.btn.copied .icon { display: none; }
+.btn.copied .btn-label { padding-left: 0; }
 
-#copyURLButton {
-	background-color: #ffffff;
-	color: #181818;
+/* text-field: the text over an 8px bar */
+.text-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.text-field input {
 	width: 100%;
-	transition: all 0.2s ease;
+	height: 22px;
+	padding: 0;
+	border: none;
+	outline: none;
+	background: transparent;
+	font-family: inherit;
+	font-size: 18px;
+	line-height: 22px;
+	font-weight: 500;
+	color: var(--text-primary);
+	text-overflow: ellipsis;   /* a placeholder (or value) too long for the field ends in "…" */
+}
+.text-field input::placeholder { color: var(--text-secondary); opacity: 1; text-overflow: ellipsis; }
+.bar {
+	display: block;
+	height: 8px;
+	border-radius: 4px;
+	background: var(--text-primary);
 }
 
-#copyURLButton:disabled {
-	background-color: #636363;
-	opacity: 0.8;
-	cursor: inherit;
+/* Frame 475: a field and its Load button, bottoms lined up */
+.load-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+}
+.load-row .text-field { flex: 1; min-width: 0; }
+
+/* ── screens ── */
+[hidden] { display: none !important; }
+
+/* Authorize / not reachable: centred in the window, as in the comps */
+.screen.center {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
 }
 
-#closeErrorBox {
-	background-color: #ffffff;
-	color: #181818;
+.message {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 24px;
+	width: 304px;
+	max-width: 100%;
+	text-align: center;
+}
+.message h2 {
+	font-size: 18px;
+	line-height: 22px;
+	font-weight: 600;
+}
+.message h2.big {
+	font-size: 32px;
+	line-height: 39px;
+}
+.secondary {
+	font-size: 18px;
+	line-height: 22px;
+	font-weight: 500;
+	color: var(--text-secondary);
+	text-wrap: balance;
+}
+
+/* the code to approve, underlined like a text-field */
+.code {
+	display: inline-flex;
+	flex-direction: column;
+	gap: 4px;
+}
+#authCode {
+	font-size: 32px;
+	line-height: 39px;
+	font-weight: 600;
+}
+
+/* Frame 493: the message (with Retry) over the paste-a-URL row */
+.error {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 32px;
+	width: 486px;
+	max-width: 100%;
+}
+.error .message { width: 100%; }
+.error .load-row { width: 434px; max-width: 100%; }
+
+/* ── settings ── */
+/* the window's width, so the list's max-width can narrow it in a small window */
+#configScreen {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 24px;
+	width: 100%;
+}
+
+/* Frame 497: under the header, 14px in at the sides and bottom */
+.controls {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	width: 632px;
+	max-width: 100%;
+	padding: 0 14px 14px;
+}
+.url-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* toggle row: label + description, square checkbox */
+.toggle-field { display: flex; align-items: center; gap: 8px; }
+.toggle-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.toggle-text label { font-size: 18px; line-height: 14px; font-weight: 600; cursor: pointer; }
+/* one line, truncated with an ellipsis; clipped sideways only, since the 14px
+   line is shorter than the glyphs and a full clip would cut their tops off */
+.hint {
+	font-size: 18px;
+	line-height: 14px;
+	font-weight: 500;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	overflow-x: clip;
+	overflow-y: visible;
+	text-overflow: ellipsis;
+}
+.toggle { position: relative; width: 32px; height: 32px; flex: none; cursor: pointer; }
+.toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.toggle-box {
+	position: absolute;
+	inset: 0;
+	border: 2.5px solid var(--text-primary);
+	border-radius: 4px;
+	color: var(--surface);   /* the tick, cut out of the filled box */
+}
+.toggle-box .icon { position: absolute; left: -2.5px; top: -2.5px; opacity: 0; }
+.toggle input:checked + .toggle-box { background: var(--text-primary); }
+.toggle input:checked + .toggle-box .icon { opacity: 1; }
+.toggle input:focus-visible + .toggle-box { outline: 2px solid var(--text-secondary); outline-offset: 2px; }
+
+#signField.off { display: none; }   /* no stand → no sign to label */
+
+/* The preview is the widget itself, laid out at its real size (the 733×841
+   stand, or just the player: its 544px card + 32px all round) and scaled down
+   by script.js to fit the window; .fit takes the scaled size. color-scheme stays
+   normal so the widget's transparent page stays see-through over the dark theme. */
+.fit {
+	position: relative;
+	flex: none;
+}
+.preview {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 733px;
+	height: 841px;
+	border: 0;
+	background: transparent;
+	color-scheme: normal;
+	transform-origin: 0 0;
+}
+.preview.bare {
+	width: 608px;
+	height: 192px;
 }

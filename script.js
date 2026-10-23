@@ -1,25 +1,24 @@
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 const token = urlParams.get("token") || "";
-const visibilityDuration = parseInt(urlParams.get("duration")) || 0;
-const hideAlbumArt = urlParams.has("hideAlbumArt");
+// ?stand=1 puts the player in the cafe stand; ?sign= is the stand's sign label.
+const standOn = urlParams.get("stand") === "1";
+let signLabel = urlParams.get("sign") || "";
+// ?preview is the configure page's preview (never in a copied URL): it never
+// hides, and shows a default song (the Song Info Card's) whenever YouTube Music
+// isn't playing: 3:55 long, parked at 2:35 like the comp.
+const previewMode = urlParams.has("preview");
+const PREVIEW_SONG = {
+    player: { trackState: 0, videoProgress: 155 },
+    video: { title: "Big Iron", author: "Marty Robbins", album: "Gunfighter Ballads And Trail Songs", durationSeconds: 235,
+             thumbnails: [{ url: new URL("assets/default-album-art.png", location.href).href }] }
+};
+const isPlayingState = (s) => !!(s && s.player && (s.player.trackState === 1 || s.player.trackState === 2));
 
 const appId = "nuttys-ytmdesktop-widget";
 const appName = "YouTube Music Widget";
 const appVersion = "1.0.0";
 let browserSourceURL = "";
-
-const scaleFactor = 1920 / 1504;
-const mainContainer = document.getElementById('mainContainer');
-if (mainContainer) {
-    mainContainer.style.transform = `scale(${scaleFactor})`;
-    mainContainer.style.transformOrigin = "center";
-}
-
-if (hideAlbumArt) {
-    const artEl = document.getElementById("albumArt");
-    if (artEl) artEl.style.display = "none";
-}
 
 if (token === "") {
     const setupContainer = document.getElementById("setupContainer");
@@ -110,9 +109,10 @@ function ShowError(code, msg) {
     if (authBoxEl) authBoxEl.style.display = 'none';
 }
 
+// The error box only appears during setup, and ShowError has already hidden the
+// code card, so closing it would leave a blank screen. Reload to start setup over.
 window.CloseErrorBox = function() {
-    const errBoxEl = document.getElementById("errorBox");
-    if (errBoxEl) errBoxEl.style.display = 'none';
+    location.reload();
 }
 
 // ── SKULL CONFIG & PRELOAD ──
@@ -136,8 +136,8 @@ preloadSkull();
 // ────────────────────────────
 
 /* ── Boil cadence — same two knobs as the Multichat overlay ────────────────
-   boilFps  — how many drawings a second (they are held in between).
-   boilStep — how far the noise field moves between drawings. Simplex
+   BOIL_FPS  — how many drawings a second (they are held in between).
+   BOIL_STEP — how far the noise field moves between drawings. Simplex
               decorrelates over ~1.0 of z, so a step this size makes each redraw
               read as a fresh drawing rather than a nudge of the last one. The
               clock used to advance by noiseTimeScale/fps, about 0.04, which is
@@ -145,14 +145,19 @@ preloadSkull();
    Time is quantised to the drawing grid, so this border turns over on the same
    beat as every other boiling outline, and the same expression serves as both
    the noise coordinate and the redraw throttle.
-   Old smooth drift: ?boilFps=24&boilStep=0.042                              */
-const BOIL_FPS = Math.max(1, Math.min(60, parseInt(urlParams.get("boilFps")) || 7));
-const BOIL_STEP = Math.max(0, Math.min(4, parseFloat(urlParams.get("boilStep")) || 0.178));
+   Old smooth drift: fps 24, step 0.042                                      */
+const BOIL_FPS = 7;
+const BOIL_STEP = 0.178;
 
 const BOIL_CFG = {
-    cornerRadius: 20, strokeWidth: 7, noiseFreq: 4.2, noiseCoordScale: 0.006,
-    noiseTimeScale: 1.0, noiseAmp: 1.5, divW: 240, divH: 80, divCorner: 10, padding: 30
+    cornerRadius: 24, strokeWidth: 8, noiseFreq: 4.2, noiseCoordScale: 0.006,
+    noiseTimeScale: 1.0, noiseAmp: 1.5, divW: 240, divH: 80, divCorner: 10, padding: 32
 };
+
+// Card colours: the card tokens in style.css (the card has no dark mode).
+const cardTokens = getComputedStyle(document.documentElement);
+const CARD_SURFACE = cardTokens.getPropertyValue('--card-surface').trim();
+const CARD_STROKE = cardTokens.getPropertyValue('--card-stroke').trim();
 
 // Live handles, read fresh every frame, so the boil can be dialled from the
 // console (or the OBS browser source's remote debugger) without a reload.
@@ -255,13 +260,15 @@ function getEraserPath(W, H, P) {
     const maxDim = Math.max(W, H) + P * 2 + 160;
 
     const basePts = [];
-    const zigzags = 24;
+    // 24 zigzags 550–600px out reach across the stand's 544px card; a card filling
+    // a wide source gets more of them, reaching further, so none of it is missed.
+    const zigzags = Math.max(24, Math.round(maxDim / 32));
     for (let i = 0; i <= zigzags; i++) {
         let t = i / zigzags;
         let bx = startX + t * maxDim;
         let by = startY + t * maxDim;
         let offset = (i % 2 === 0) ? 1 : -1;
-        let amp = 550 + Math.random() * 50;
+        let amp = Math.max(550, (W + P * 2) * 0.75) + Math.random() * 50;
         if (i === 0 || i === zigzags) amp = 0;
         let px = 0.707;
         let py = -0.707;
@@ -348,19 +355,15 @@ window.setWidgetVisibility = function(visible) {
     }
 }
 
-function initBoilingBorder(canvas, contentW, contentH) {
-    if (!canvas) return;
+// Returns setSize(W, H): the card's size comes from the page layout (without the
+// stand it fills the source's width), so the canvases, the outline and the
+// eraser are rebuilt whenever it changes.
+function initBoilingBorder(canvas) {
+    if (!canvas) return () => {};
     const P = BOIL_CFG.padding, R = BOIL_CFG.cornerRadius;
-    const cw = contentW + P * 2, ch = contentH + P * 2;
-    const dpr = (window.devicePixelRatio || 1) * scaleFactor;
-    
-    canvas.width = cw * dpr;
-    canvas.height = ch * dpr;
-    canvas.style.width = cw + 'px';
-    canvas.style.height = ch + 'px';
+    let contentW = 0, contentH = 0, cw = 0, ch = 0, basePath = [];
 
     const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
 
     // ─── SKULL CANVAS SETUP ───
     let skullCanvas = document.getElementById('skullOverlayCanvas');
@@ -376,27 +379,46 @@ function initBoilingBorder(canvas, contentW, contentH) {
         skullCanvas.style.zIndex = '100';
         canvas.parentElement.insertBefore(skullCanvas, canvas.nextSibling);
     }
-    skullCanvas.width = cw * dpr;
-    skullCanvas.height = ch * dpr;
-    skullCanvas.style.width = cw + 'px';
-    skullCanvas.style.height = ch + 'px';
-    
     const skullCtx = skullCanvas.getContext('2d');
-    skullCtx.scale(dpr, dpr);
     // ─────────────────────────
 
-    const basePath = boilBuildBasePath(contentW, contentH, R);
     let seed = Math.random() * 1000;
     const contentEl = document.querySelector('.sub-card-content');
     initEraserMask();
     // initEraserMask has just put this in the document, so look it up once here
     // rather than doing a getElementById on every frame of the loop below.
     const eraserPathEl = document.getElementById('eraser-path');
+    const eraserMaskEl = document.getElementById('eraser-mask');
     let hiddenSettled = false;   // has the HIDDEN state already been wiped to screen?
     const deformScratch = [];    // reused by boilDeformPath, see the note there
     let lastDrawnIdx = -1;       // which drawing the border canvas currently holds
     let introHoldIdx = null;     // the one drawing held through the appear animation
     let skullDrawnIdx = -1, skullDrawnAlpha = -1;   // what the skull canvas currently holds
+
+    function setSize(W, H) {
+        if (W === contentW && H === contentH) return;
+        contentW = W; contentH = H;
+        cw = W + P * 2; ch = H + P * 2;
+        const dpr = window.devicePixelRatio || 1;
+        for (const [c, c2d] of [[canvas, ctx], [skullCanvas, skullCtx]]) {
+            c.width = cw * dpr;
+            c.height = ch * dpr;
+            c.style.width = cw + 'px';
+            c.style.height = ch + 'px';
+            c2d.setTransform(dpr, 0, 0, dpr, 0, 0);   // resizing a canvas resets it
+        }
+        basePath = boilBuildBasePath(W, H, R);
+        eraserPts = null;   // the outro's scribble is sized to the card too
+        // The eraser mask has to cover the card and the canvases around it.
+        for (const el of [eraserMaskEl, eraserMaskEl.firstElementChild]) {
+            el.setAttribute('x', -P - 200);
+            el.setAttribute('y', -P - 200);
+            el.setAttribute('width', cw + 400);
+            el.setAttribute('height', ch + 400);
+        }
+        lastDrawnIdx = -1;    // repaint the border...
+        skullDrawnIdx = -1;   // ...and the skull at the new size
+    }
 
     const STROKE_DUR = 1200;
     const FADE_DELAY = 300;
@@ -530,24 +552,26 @@ function initBoilingBorder(canvas, contentW, contentH) {
                 ctx.setLineDash([]);
             }
 
-            ctx.fillStyle = `rgba(255, 255, 255, ${smoothFade})`;
-            ctx.strokeStyle = `rgba(255, 255, 255, ${smoothFade})`;
+            ctx.globalAlpha = smoothFade;
+            ctx.fillStyle = CARD_SURFACE;
+            ctx.strokeStyle = CARD_SURFACE;
             ctx.fill(borderPath);
             ctx.stroke(borderPath);
+            ctx.globalAlpha = 1;
 
             if (contentEl) contentEl.style.opacity = smoothFade;
 
-            ctx.strokeStyle = '#000000';
+            ctx.strokeStyle = CARD_STROKE;
             ctx.stroke(borderPath);
 
         } else if (window.widgetAnimState === 'VISIBLE' || window.widgetAnimState === 'DISAPPEARING') {
             ctx.setLineDash([]);
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = CARD_SURFACE;
+            ctx.strokeStyle = CARD_SURFACE;
             ctx.fill(borderPath);
             ctx.stroke(borderPath);
 
-            ctx.strokeStyle = '#000000';
+            ctx.strokeStyle = CARD_STROKE;
             ctx.stroke(borderPath);
 
             if (contentEl && contentEl.style.opacity !== "1") {
@@ -627,6 +651,7 @@ function initBoilingBorder(canvas, contentW, contentH) {
         requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
+    return setSize;
 }
 
 const state = {
@@ -794,11 +819,10 @@ function tickSongTextReset() {
     return p;
 }
 
-initBoilingBorder(borderCanvasEl, 485, 120);
+const setBoilSize = initBoilingBorder(borderCanvasEl);
 
 let currentState = -1;
 let hideDebounceTimeout = null;
-let durationTimeout = null;
 
 function ConvertSeconds(time) {
     if (!time || time < 0 || isNaN(time)) return "0:00";
@@ -808,6 +832,10 @@ function ConvertSeconds(time) {
 }
 
 function SetConnectionStatus(connected) {
+    if (previewMode) {   // no status pill in the preview; losing YTMDesktop falls back to the default song
+        if (!connected) UpdatePlayer(PREVIEW_SONG);
+        return;
+    }
     let statusContainer = document.getElementById("statusContainer");
     if (!statusContainer) return;
     if (connected) {
@@ -836,7 +864,8 @@ function UpdatePlayer(stateData) {
     
     const serverSecs = player.videoProgress || 0;
     const incomingTitle = songInfo.title || '';
-    const incomingArtist = songInfo.author || '';
+    // Figma's second line is "Artist - Album" (just the artist when there's no album)
+    const incomingArtist = [songInfo.author, songInfo.album].filter(Boolean).join(' - ');
     const incomingKey = incomingTitle + '␟' + incomingArtist;
     const songChanged = incomingKey !== songKey;
     const stateChanged = player.trackState !== currentState;
@@ -869,8 +898,7 @@ function UpdatePlayer(stateData) {
 
     if (player.trackState !== currentState) {
         clearTimeout(hideDebounceTimeout);
-        clearTimeout(durationTimeout);
- 
+
         if (player.trackState === 1 || player.trackState === 2) {
             // 1 = playing, 2 = buffering while a track loads (e.g. when you skip
             // or a new song starts right after another). Keep the widget visible
@@ -878,17 +906,12 @@ function UpdatePlayer(stateData) {
             // never replays mid-skip.
             window.setWidgetVisibility(true);
             state.isPlaying = (player.trackState === 1);
-
-            if (player.trackState === 1 && visibilityDuration > 0) {
-                durationTimeout = setTimeout(() => {
-                    window.setWidgetVisibility(false);
-                }, visibilityDuration * 1000);
-            }
         } else {
             // Genuinely paused/stopped: run the outro after a short debounce so
             // it reacts promptly instead of waiting a long time.
             state.isPlaying = false;
-            hideDebounceTimeout = setTimeout(() => {
+            if (previewMode) window.setWidgetVisibility(true);   // the preview stays up
+            else hideDebounceTimeout = setTimeout(() => {
                 window.setWidgetVisibility(false);
             }, 400);
         }
@@ -905,7 +928,7 @@ function connectws() {
     });
 
     socket.on("state-update", (stateData) => {
-        UpdatePlayer(stateData);
+        UpdatePlayer(previewMode && !isPlayingState(stateData) ? PREVIEW_SONG : stateData);
     });
 
     socket.on('connect', function () {
@@ -1012,15 +1035,45 @@ function updateUI(ts) {
                 const segments = Math.max(10, Math.floor(thumbX / 3));
                 for (let i = 0; i <= segments; i++) {
                     const px = (i / segments) * thumbX;
-                    const py = 12 + Math.sin((px * 0.15) + (timeMs * 0.004)) * 1.5;
+                    const py = 8 + Math.sin((px * 0.15) + (timeMs * 0.004)) * 1.5;   // centre of the 16px track
                     d += (i === 0 ? 'M ' : ' L ') + px.toFixed(1) + ' ' + py.toFixed(2);
                 }
             } else {
-                d = "M 0 12";
+                d = "M 0 8";
             }
             progressPath.setAttribute('d', d);
         }
     }
     requestAnimationFrame(updateUI);
 }
+
+/* ── Layout ─────────────────────────────────────────────────────────────────
+   Nothing scales: the widget is drawn at its design size. Without the stand the
+   card fills the source's width; a source under 192px tall gets the compact
+   player (172px is its full height), which never has the stand. With the stand
+   it's the fixed 733×841 stall, card in its counter. */
+const COMPACT_BELOW = 192;
+const cardWrapperEl = document.querySelector('.sub-card-wrapper');
+function applyLayout() {
+    const compact = window.innerHeight < COMPACT_BELOW;
+    document.body.classList.toggle('compact', compact);
+    document.body.classList.toggle('stand', standOn && !compact);
+    setBoilSize(cardWrapperEl.offsetWidth, cardWrapperEl.offsetHeight);
+    measureMarquees();
+    refreshProgressWidth();
+}
+window.addEventListener('resize', applyLayout);
+applyLayout();
+
+// The sign: laid out again once Inter 700 is in (the label's width sets the
+// frame), and whenever the configure page's preview sends the label as it's typed.
+function drawSign() { if (standOn) Sign.layout(signLabel); }
+window.addEventListener('message', (e) => {
+    if (e.data && typeof e.data.sign === 'string') { signLabel = e.data.sign; drawSign(); }
+});
+document.fonts.load('700 32px Inter').then(drawSign, drawSign);
+drawSign();
+
+if (previewMode) UpdatePlayer(PREVIEW_SONG);   // until YouTube Music plays something
+
 requestAnimationFrame(updateUI);

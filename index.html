@@ -4,10 +4,11 @@
     <title>YouTube Music Widget</title>
     <meta charset="UTF-8">
     <link rel="shortcut icon" href="#" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./style.css?v=2" />
+    <!-- The Inter build Figma uses (Google Fonts serves a newer one whose letter widths differ) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.15/500.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.15/600.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.15/700.css">
+    <link rel="stylesheet" href="./style.css?v=3" />
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -16,15 +17,26 @@
 
     <!-- Main Music Player -->
     <div id="mainContainer">
+        <!-- The stand (?stand=1): the stall, its hanging sign (laid out by sign.js)
+             and the counter the card sits in. Hidden without the stand. -->
+        <img class="stall" src="assets/stall.svg" alt="" />
+        <svg class="sign" width="733" height="841" viewBox="0 0 733 841" aria-hidden="true">
+            <line id="hangL" />
+            <line id="hangR" />
+            <rect id="signBox" rx="8" />
+            <text id="signText" text-anchor="middle"></text>
+        </svg>
+        <div class="counter"></div>
+
         <!-- Main wrapper imitating your chat box structure -->
         <div class="sub-card-wrapper">
             <!-- Boiling border canvas behind the content -->
             <canvas class="sub-border-canvas"></canvas>
-            
+
             <!-- Pure HTML/CSS Content Layout -->
             <div class="sub-card-content">
                 <img id="albumArt" class="album-art" src="" alt="Album Art" />
-                
+
                 <div class="info-area">
                     <!-- Two copies per line for the seamless smooth-wrap marquee
                          (ported from the Music Card). JS fills both .mq-copy spans. -->
@@ -38,13 +50,13 @@
                             <span class="mq-copy"></span><span class="mq-copy" aria-hidden="true"></span>
                         </div>
                     </div>
-                    
+
                     <div class="progress-area">
                         <span id="timeCurrent" class="time">0:00</span>
                         <div class="progress-bar-container" id="progressContainer">
                             <!-- Inline SVG for the Sine Wave -->
-                            <svg id="progressSvg" height="24">
-                                <path id="progressPath" fill="none" stroke="#000000" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+                            <svg id="progressSvg" height="16">
+                                <path id="progressPath" fill="none" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                             <div id="progressThumb" class="progress-thumb"></div>
                         </div>
@@ -66,7 +78,7 @@
             </div>
             <button id="copyURLButton" disabled onclick="CopyToURL()">Waiting for approval...</button>
         </div>
-        
+
         <div id="errorBox">
             <div id="errorCode">Error</div>
             <div id="errorMessage">Could not connect to YTMDesktop.</div>
@@ -74,6 +86,7 @@
         </div>
     </div>
 
-    <script src="./script.js?v=2"></script>
+    <script src="./sign.js?v=3"></script>
+    <script src="./script.js?v=3"></script>
 </body>
 </html>

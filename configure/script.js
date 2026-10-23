@@ -1,92 +1,162 @@
 const appId = "nuttys-ytmdesktop-widget";
 const appName = "nuttys YouTube Music Widget";
 const appVersion = "1.0.0";
-const baseURL = "http://LostXC.github.io/MusicPlayerWidgetEseninocafe";
+const widgetURL = "https://LostXC.github.io/MusicPlayerWidgetEseninocafe";
+const YTMD = "http://localhost:9863/api/v1";
 
-let browserSourceURL = "";
+const $ = (id) => document.getElementById(id);
+const standToggle = $('standToggle'), signInput = $('signInput'), preview = $('preview');
+let token = "";
 
-async function RequestCode() {
-	const response = await fetch("http://localhost:9863/api/v1/auth/requestcode", {
-		method: "POST",
-		body: JSON.stringify({
-			"appId": appId,
-			"appName": appName,
-			"appVersion": appVersion
-		}),
-		headers: {
-			"Content-type": "application/json; charset=UTF-8"
-		}
-	});
-	
-	const responseData = await response.json();
-	if (responseData.hasOwnProperty("statusCode")) {
-		document.getElementById("errorCode").innerText = responseData.statusCode;
-		document.getElementById("errorMessage").innerText = responseData.message;
-		document.getElementById("errorBox").style.display = 'inline';
-	} else {
-		return responseData;
-	}
+/* ── Screens ── */
+function show(screen) {
+	for (const id of ['authScreen', 'errorScreen', 'configScreen']) $(id).hidden = id !== screen;
 }
 
-async function RequestToken() {
-	const requestCode = await RequestCode();
-	if (!requestCode) return;
-	
-	const authCode = requestCode.code;
-	document.getElementById("authorizationCode").innerText = authCode;
-	document.getElementById("authorizationBox").style.display = 'inline';
-
-	const response = await fetch("http://localhost:9863/api/v1/auth/request", {
-		method: "POST",
-		body: JSON.stringify({
-			"appId": appId,
-			"code": authCode
-		}),
-		headers: {
-			"Content-type": "application/json; charset=UTF-8"
-		}
-	});
-
-	const responseData = await response.json();
-	if (responseData.hasOwnProperty("statusCode")) {
-		document.getElementById("errorCode").innerText = responseData.statusCode;
-		document.getElementById("errorMessage").innerText = responseData.message;
-		document.getElementById("errorBox").style.display = 'inline';
-		document.getElementById("authorizationBox").style.display = 'none';
-	} else {
-		const token = responseData.token;
-		browserSourceURL = `${baseURL}?token=${token}`;
-		
-		document.getElementById("copyURLButton").disabled = false;
-		document.getElementById("copyURLButton").innerText = "Click to copy URL";
-		document.getElementById("authorizationCode").style.display = 'none';
-		document.getElementById("donateButton").style.display = 'block';
-		document.getElementById("authorizationComplete").style.display = 'block';
-	}
+const UNREACHABLE = { title: $('errorTitle').textContent, message: $('errorMessage').textContent };
+function showError(title, message) {
+	$('errorTitle').textContent = title;
+	$('errorMessage').textContent = message;
+	show('errorScreen');
 }
 
-function CopyToURL() {
-	navigator.clipboard.writeText(browserSourceURL);
-	
-	document.getElementById("copyURLButton").innerText = "Copied to clipboard";
-	document.getElementById("copyURLButton").style.backgroundColor = "#00dd63";
-	document.getElementById("copyURLButton").style.color = "#ffffff";
+async function post(path, body) {
+	const response = await fetch(YTMD + path, {
+		method: "POST",
+		body: JSON.stringify(body),
+		headers: { "Content-type": "application/json; charset=UTF-8" }
+	});
+	return response.json();
+}
 
+// No Connect page: ask for a code as soon as the page opens, show it, and wait
+// for it to be approved in YTMDesktop. YTMDesktop answering with an error shows
+// its own message; not answering at all is the "not reachable" screen.
+async function connect() {
+	try {
+		const request = await post("/auth/requestcode", { appId, appName, appVersion });
+		if (request.statusCode) return showError(`Error ${request.statusCode}`, request.message);
+		$('authCode').textContent = request.code;
+		show('authScreen');
+
+		const approval = await post("/auth/request", { appId, code: request.code });
+		if (approval.statusCode) return showError(`Error ${approval.statusCode}`, approval.message);
+		openSettings(approval.token, true, "");   // the stand starts on, as in the comp
+	} catch (e) {
+		showError(UNREACHABLE.title, UNREACHABLE.message);
+	}
+}
+$('retryBtn').addEventListener('click', connect);
+
+/* ── Settings ── */
+function openSettings(newToken, stand, sign) {
+	token = newToken;
+	standToggle.checked = stand;
+	setSign(sign);
+	show('configScreen');
+	reloadPreview();
+}
+
+// The widget's query: the token, plus the stand and its label when the stand is on.
+function widgetQuery() {
+	const p = new URLSearchParams({ token });
+	if (standToggle.checked) {
+		p.set('stand', '1');
+		const sign = signInput.value.trim();
+		if (sign) p.set('sign', sign);
+	}
+	return p.toString();
+}
+
+// The preview is the widget itself, with this token: it shows what YouTube Music
+// is playing, and a default song when nothing is (?preview, see script.js).
+function reloadPreview() {
+	$('signField').classList.toggle('off', !standToggle.checked);
+	preview.classList.toggle('bare', !standToggle.checked);
+	preview.src = '../index.html?' + widgetQuery() + '&preview';
+	fitPreview();
+}
+standToggle.addEventListener('change', reloadPreview);
+
+/* ── Fit the preview to the window (only the preview: the widget never scales) ──
+   The stand (or the bare player) is scaled down to fit below the settings,
+   14px clear of the window's edges, never up. */
+const STAND = { w: 733, h: 841 }, BARE = { w: 608, h: 192 }, PAD = 14;
+function fitPreview() {
+	if ($('configScreen').hidden) return;
+	const box = standToggle.checked ? STAND : BARE;
+	const top = $('fit').getBoundingClientRect().top + window.scrollY;
+	const s = Math.max(0.1, Math.min(1, (innerWidth - 2 * PAD) / box.w, (innerHeight - top - PAD) / box.h));
+	preview.style.transform = `scale(${s})`;
+	$('fit').style.width = box.w * s + 'px';
+	$('fit').style.height = box.h * s + 'px';
+}
+window.addEventListener('resize', fitPreview);
+document.fonts.ready.then(fitPreview);   // Inter settles the settings' height
+
+$('copyUrlBtn').addEventListener('click', () => {
+	navigator.clipboard.writeText(widgetURL + '?' + widgetQuery());
+	$('copyUrlLabel').textContent = 'Copied';
+	$('copyUrlBtn').classList.add('copied');            // label only, no icon
 	setTimeout(() => {
-		document.getElementById("copyURLButton").innerText = "Click to copy URL";
-		document.getElementById("copyURLButton").style.backgroundColor = "#ffffff";
-		document.getElementById("copyURLButton").style.color = "#181818";
-	}, 3000);
+		$('copyUrlLabel').textContent = 'Copy Widget URL';
+		$('copyUrlBtn').classList.remove('copied');
+	}, 1500);
+});
+
+/* ── Paste a widget URL: back to its settings, no new code needed ── */
+function loadUrl(input) {
+	let url = null;
+	try { url = new URL(input.value.trim()); } catch (e) {}
+	const pastedToken = url && url.searchParams.get('token');
+	input.value = '';
+	if (!pastedToken) { input.placeholder = 'Not a widget URL'; return; }
+	input.placeholder = 'Paste your widget URL';
+	openSettings(pastedToken, url.searchParams.get('stand') === '1', url.searchParams.get('sign') || '');
+}
+document.querySelectorAll('.load-row').forEach((row) => {
+	const input = row.querySelector('.url-input');
+	row.querySelector('.load-btn').addEventListener('click', () => loadUrl(input));
+	input.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadUrl(input); });
+	input.addEventListener('input', () => { input.placeholder = 'Paste your widget URL'; });
+});
+
+/* ── Sign label ──
+   maxlength caps the characters; this handles the rare change that is still too
+   wide for the sign's 32px type. Text added at the end (typing, a paste) is
+   trimmed to what fits; a change in the middle is refused, caret kept in place.
+   The preview gets each label as it's typed, without reloading. */
+let acceptedSign = '';
+const fits = (v) => Sign.width(v.trim()) <= Sign.MAX_TEXT_W;
+
+signInput.addEventListener('input', () => {
+	let v = signInput.value;
+	if (!fits(v)) {
+		if (signInput.selectionStart === v.length) {           // added at the end → trim
+			while (v && !fits(v)) v = v.slice(0, -1);
+			signInput.value = v;
+		} else {                                               // mid-string → refuse
+			const caret = Math.max(0, signInput.selectionStart - (v.length - acceptedSign.length));
+			signInput.value = v = acceptedSign;
+			signInput.setSelectionRange(caret, caret);
+		}
+	}
+	acceptedSign = v;
+	preview.contentWindow.postMessage({ sign: v }, '*');
+});
+
+// A label from a pasted URL: the same cap, trimmed to what fits.
+function setSign(v) {
+	v = v.slice(0, Sign.MAX_CHARS);
+	while (v && !fits(v)) v = v.slice(0, -1);
+	signInput.value = acceptedSign = v;
 }
 
-function OpenInstructions() {
-    window.open("https://www.notion.so/nuttylmao/YouTube-Music-Widget-18d19969b23780e2bb56d25eed4d154e", '_blank').focus();
-}
+/* ── Theme: the same saved choice as the Song Info Card (dark unless set to light) ── */
+$('themeToggle').addEventListener('click', () => {
+	const light = document.body.classList.toggle('light-mode');
+	try { localStorage.setItem('theme', light ? 'light' : 'dark'); } catch (e) {}
+});
 
-function OpenDonationPage() {
-    window.open("http://nutty.gg/pages/donate", '_blank').focus();
-}
-
-function CloseErrorBox() {
-	document.getElementById("errorBox").style.display = 'none';
-}
+document.fonts.load('700 32px Inter');   // the sign's type, which the label is measured in
+connect();
