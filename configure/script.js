@@ -46,11 +46,28 @@ async function connect() {
 		showError(UNREACHABLE.title, UNREACHABLE.message);
 	}
 }
-$('retryBtn').addEventListener('click', connect);
+// A token from an earlier visit is reused: YTMDesktop turns authorization
+// requests off once it approves one, so asking again on a refresh is refused.
+// Only a token YTMDesktop rejects is dropped for a new code.
+async function start() {
+	let saved = null;
+	try { saved = localStorage.getItem('ytmdToken'); } catch (e) {}
+	if (!saved) return connect();
+	try {
+		const response = await fetch(YTMD + "/state", { headers: { Authorization: saved } });
+		if (response.status !== 401 && response.status !== 403) return openSettings(saved, true, "");
+		try { localStorage.removeItem('ytmdToken'); } catch (e) {}
+		connect();
+	} catch (e) {
+		showError(UNREACHABLE.title, UNREACHABLE.message);
+	}
+}
+$('retryBtn').addEventListener('click', start);
 
 /* ── Settings ── */
 function openSettings(newToken, stand, sign) {
 	token = newToken;
+	try { localStorage.setItem('ytmdToken', token); } catch (e) {}
 	standToggle.checked = stand;
 	setSign(sign);
 	show('configScreen');
@@ -165,4 +182,4 @@ $('themeToggle').addEventListener('click', () => {
 });
 
 document.fonts.load('700 32px Inter');   // the sign's type, which the label is measured in
-connect();
+start();
