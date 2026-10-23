@@ -16,7 +16,7 @@ const PREVIEW_SONG = {
 const isPlayingState = (s) => !!(s && s.player && (s.player.trackState === 1 || s.player.trackState === 2));
 
 const appId = "nuttys-ytmdesktop-widget";
-const appName = "YouTube Music Widget";
+const appName = "Music Player Widget";
 const appVersion = "1.0.0";
 let browserSourceURL = "";
 
