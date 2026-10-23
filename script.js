@@ -39,12 +39,12 @@ async function RequestCode() {
         });
         const data = await response.json();
         if (data.hasOwnProperty("statusCode")) {
-            ShowError(data.statusCode, data.message);
+            ShowError(data.message);
             return null;
         }
         return data;
     } catch (e) {
-        ShowError("Connection Error", "Is YTMDesktop running?");
+        ShowError("IS YOUTUBE MUSIC RUNNING?");
         return null;
     }
 }
@@ -66,7 +66,7 @@ async function RequestToken() {
         const data = await response.json();
 
         if (data.hasOwnProperty("statusCode")) {
-            ShowError(data.statusCode, data.message);
+            ShowError(data.message);
         } else {
             browserSourceURL = `https://eseninocafe.github.io/music-player/?token=${data.token}`;
             const btn = document.getElementById("copyURLButton");
@@ -79,7 +79,7 @@ async function RequestToken() {
             if (completeEl) completeEl.style.display = 'block';
         }
     } catch (e) {
-        ShowError("Token Error", "Failed to get authorization token.");
+        ShowError("AUTHORIZATION FAILED");
     }
 }
 
@@ -98,21 +98,12 @@ window.CopyToURL = function() {
     }
 }
 
-function ShowError(code, msg) {
-    const errCodeEl = document.getElementById("errorCode");
-    const errMsgEl = document.getElementById("errorMessage");
-    const errBoxEl = document.getElementById("errorBox");
-    const authBoxEl = document.getElementById("authorizationBox");
-    if (errCodeEl) errCodeEl.innerText = "Error: " + code;
-    if (errMsgEl) errMsgEl.innerText = msg;
-    if (errBoxEl) errBoxEl.style.display = 'block';
-    if (authBoxEl) authBoxEl.style.display = 'none';
-}
-
-// The error box only appears during setup, and ShowError has already hidden the
-// code card, so closing it would leave a blank screen. Reload to start setup over.
-window.CloseErrorBox = function() {
-    location.reload();
+// Setup errors drop the setup screen and show in the connection pill instead.
+function ShowError(msg) {
+    document.getElementById("setupContainer").style.display = "none";
+    clearTimeout(connectionHideTimer);
+    connectionLabel.textContent = msg;
+    connectionLabel.classList.remove("hidden");
 }
 
 // ── SKULL CONFIG & PRELOAD ──
