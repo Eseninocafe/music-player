@@ -217,13 +217,13 @@ body.compact .artist { font-size: 18px; line-height: 22px; }
 body.compact .progress-area { height: 22px; }
 body.compact .time { font-size: 18px; line-height: 22px; }
 
-/* ── The stand (?stand=1, never compact): the 733×841 stall, card in its counter ── */
+/* ── The stand (?stand=1, never compact): the 732×832 stall, card in its counter ── */
 .stall, .sign, .counter { display: none; }
 
 body.stand #mainContainer {
 	flex: none;
-	width: 733px;
-	height: 841px;
+	width: 732px;
+	height: 832px;
 	padding: 0;
 }
 
@@ -260,7 +260,7 @@ body.stand .counter {
 	display: block;
 	position: absolute;
 	left: 62px;
-	top: 649px;
+	top: 640px;
 	width: 608px;
 	height: 192px;
 	border: 8px solid var(--card-stroke);
@@ -271,7 +271,7 @@ body.stand .counter {
 body.stand .sub-card-wrapper {
 	position: absolute;
 	left: 94px;
-	top: 681px;
+	top: 672px;
 	width: 544px;
 }
 

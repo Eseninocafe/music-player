@@ -98,7 +98,7 @@ standToggle.addEventListener('change', reloadPreview);
 /* ── Fit the preview to the window (only the preview: the widget never scales) ──
    The stand (or the bare player) is scaled down to fit below the settings,
    14px clear of the window's edges, never up. */
-const STAND = { w: 733, h: 841 }, BARE = { w: 608, h: 192 }, PAD = 14;
+const STAND = { w: 732, h: 832 }, BARE = { w: 608, h: 192 }, PAD = 14;
 function fitPreview() {
 	if ($('configScreen').hidden) return;
 	const box = standToggle.checked ? STAND : BARE;

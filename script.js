@@ -1047,7 +1047,7 @@ function updateUI(ts) {
    Nothing scales: the widget is drawn at its design size. Without the stand the
    card fills the source's width; a source under 192px tall gets the compact
    player (172px is its full height), which never has the stand. With the stand
-   it's the fixed 733×841 stall, card in its counter. */
+   it's the fixed 732×832 stall, card in its counter. */
 const COMPACT_BELOW = 192;
 const cardWrapperEl = document.querySelector('.sub-card-wrapper');
 function applyLayout() {

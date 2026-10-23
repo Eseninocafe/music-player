@@ -301,7 +301,7 @@ body.light-mode #themeIcon { --icon: url(../assets/icons/sun.svg); }
 
 #signField.off { display: none; }   /* no stand → no sign to label */
 
-/* The preview is the widget itself, laid out at its real size (the 733×841
+/* The preview is the widget itself, laid out at its real size (the 732×832
    stand, or just the player: its 544px card + 32px all round) and scaled down
    by script.js to fit the window; .fit takes the scaled size. color-scheme stays
    normal so the widget's transparent page stays see-through over the dark theme. */
@@ -313,8 +313,8 @@ body.light-mode #themeIcon { --icon: url(../assets/icons/sun.svg); }
 	position: absolute;
 	left: 0;
 	top: 0;
-	width: 733px;
-	height: 841px;
+	width: 732px;
+	height: 832px;
 	border: 0;
 	background: transparent;
 	color-scheme: normal;

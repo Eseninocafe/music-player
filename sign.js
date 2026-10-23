@@ -1,7 +1,7 @@
 /* The stand's hanging sign. The widget draws it; the configure page uses the
-   same measurements to cap the label. Coordinates are the stand's (733 × 841,
-   the same as assets/stall.svg), and the frame is measured on its stroke's
-   centre line, as Figma draws it.
+   same measurements to cap the label. Coordinates are the stand's (732 × 832;
+   assets/stall.svg's are 9px lower, see its viewBox), and the frame is
+   measured on its stroke's centre line, as Figma draws it.
 
    The two strings hang from the awning's scallop bottoms, and the frame is
    centred between them. For a label, the pair is the one whose spacing puts the
@@ -15,9 +15,9 @@ const Sign = (() => {
     const DEFAULT = 'Opening Soon';
     const MAX_CHARS = 24;
     const SCALLOPS = [55.755, 159.265, 262.775, 366.286, 469.796, 573.306, 676.816];  // scallop bottoms, x
-    const SCALLOP_Y = 405.183;                  // ...and y (the awning stroke's centre line)
+    const SCALLOP_Y = 396.183;                  // ...and y (the awning stroke's centre line)
     const POST_L = 112.743, POST_R = 620.743;   // the posts' inner stroke edges
-    const TOP = 419, H = 75, PAD_X = 24, PAD_Y = 18, LINE_H = 39, FONT = 32;
+    const TOP = 410, H = 75, PAD_X = 24, PAD_Y = 18, LINE_H = 39, FONT = 32;
     const STROKE = 8, POST_GAP = 2, STRING_INSET = 32;
 
     // Every scallop pair the sign could hang from, with the widest frame that,
