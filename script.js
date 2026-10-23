@@ -831,28 +831,24 @@ function ConvertSeconds(time) {
     return `${minutes}:${('0' + seconds).slice(-2)}`;
 }
 
+// The label at the bottom (the chat box's): NOT CONNECTED until YTMDesktop connects,
+// then CONNECTED for a moment before it fades. Built here rather than in index.html,
+// so a cached old page paired with this script can't break it.
+const connectionLabel = document.createElement('div');
+connectionLabel.id = 'connectionLabel';
+connectionLabel.textContent = 'NOT CONNECTED';
+if (!previewMode) document.body.appendChild(connectionLabel);
+let connectionHideTimer = 0;
 function SetConnectionStatus(connected) {
-    if (previewMode) {   // no status pill in the preview; losing YTMDesktop falls back to the default song
+    if (previewMode) {   // no label in the preview; losing YTMDesktop falls back to the default song
         if (!connected) UpdatePlayer(PREVIEW_SONG);
         return;
     }
-    let statusContainer = document.getElementById("statusContainer");
-    if (!statusContainer) return;
-    if (connected) {
-        statusContainer.style.background = "#2FB774";
-        statusContainer.innerText = "Connected!";
-        statusContainer.style.opacity = 1;
-        setTimeout(() => {
-            statusContainer.style.transition = "all 2s ease";
-            statusContainer.style.opacity = 0;
-        }, 1500);
-    } else {
-        statusContainer.style.transition = "none";
-        statusContainer.style.background = "#D12025";
-        statusContainer.innerText = "Connecting...";
-        statusContainer.style.opacity = 1;
-        window.setWidgetVisibility(false);
-    }
+    clearTimeout(connectionHideTimer);
+    connectionLabel.textContent = connected ? 'CONNECTED' : 'NOT CONNECTED';
+    connectionLabel.classList.remove('hidden');
+    if (connected) connectionHideTimer = setTimeout(() => connectionLabel.classList.add('hidden'), 2000);
+    else window.setWidgetVisibility(false);
 }
 
 function UpdatePlayer(stateData) {

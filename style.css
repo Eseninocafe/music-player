@@ -279,21 +279,28 @@ body.stand .sub-card-wrapper {
    ADDED MISSING ELEMENTS FOR NUTTY'S AUTH & STATUS POPUPS
 ========================================================== */
 
-#statusContainer { 
-	font-weight: 500; 
-	font-size: 30px; 
-	text-align: center; 
-	background-color: #D12025; 
-	color: white; 
-	padding: 10px; 
-	border-radius: 10px; 
-	position: absolute; 
-	top: 50%; 
-	left: 50%; 
-	transform: translate(-50%, -50%); 
-	opacity: 0;
-	z-index: 9999;
+/* YTMDesktop connection label (the chat box's): bottom centre, 24px up. Figma's 8px
+   stroke is centred on the frame, so half of it eats into the 14px padding and the
+   other half hangs 4px outside: the frame is 24px up, so the border box is 20px. Its
+   16px radius is on that centre line too, so the outer edge is 20 (and the inside 12). */
+#connectionLabel {
+	position: fixed;
+	left: 50%;
+	bottom: 20px;
+	transform: translateX(-50%);
+	z-index: 2;
+	padding: 10px;
+	background: var(--white);
+	border: 8px solid var(--black);
+	border-radius: 20px;
+	font-size: 24px;
+	line-height: 29px;
+	font-weight: 600;
+	color: var(--black);
+	white-space: nowrap;
+	transition: opacity 350ms ease;
 }
+#connectionLabel.hidden { opacity: 0; }
 
 #setupContainer {
 	position: absolute;
