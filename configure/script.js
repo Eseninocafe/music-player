@@ -13,13 +13,6 @@ function show(screen) {
 	for (const id of ['authScreen', 'errorScreen', 'configScreen']) $(id).hidden = id !== screen;
 }
 
-const UNREACHABLE = { title: $('errorTitle').textContent, message: $('errorMessage').textContent };
-function showError(title, message) {
-	$('errorTitle').textContent = title;
-	$('errorMessage').textContent = message;
-	show('errorScreen');
-}
-
 async function post(path, body) {
 	const response = await fetch(YTMD + path, {
 		method: "POST",
@@ -30,20 +23,20 @@ async function post(path, body) {
 }
 
 // No Connect page: ask for a code as soon as the page opens, show it, and wait
-// for it to be approved in YTMDesktop. YTMDesktop answering with an error shows
-// its own message; not answering at all is the "not reachable" screen.
+// for it to be approved in YTMDesktop. Any failure (not answering, authorization
+// requests turned off, the code denied or timed out) is the "not reachable" screen.
 async function connect() {
 	try {
 		const request = await post("/auth/requestcode", { appId, appName, appVersion });
-		if (request.statusCode) return showError(`Error ${request.statusCode}`, request.message);
+		if (request.statusCode) throw request;
 		$('authCode').textContent = request.code;
 		show('authScreen');
 
 		const approval = await post("/auth/request", { appId, code: request.code });
-		if (approval.statusCode) return showError(`Error ${approval.statusCode}`, approval.message);
+		if (approval.statusCode) throw approval;
 		openSettings(approval.token, true, "");   // the stand starts on, as in the comp
 	} catch (e) {
-		showError(UNREACHABLE.title, UNREACHABLE.message);
+		show('errorScreen');
 	}
 }
 // A token from an earlier visit is reused: YTMDesktop turns authorization
@@ -59,7 +52,7 @@ async function start() {
 		try { localStorage.removeItem('ytmdToken'); } catch (e) {}
 		connect();
 	} catch (e) {
-		showError(UNREACHABLE.title, UNREACHABLE.message);
+		show('errorScreen');
 	}
 }
 $('retryBtn').addEventListener('click', start);
