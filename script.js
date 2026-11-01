@@ -1,4 +1,6 @@
-const queryString = window.location.search;
+// "/?preview" on the end of any widget URL shows the preview, even after the
+// settings' own "?…" (where it would otherwise be read into the last setting).
+const queryString = window.location.search.replace(/\/?\?preview$/, '&preview');
 const urlParams = new URLSearchParams(queryString);
 const token = urlParams.get("token") || "";
 // ?stand=1 puts the player in the cafe stand; ?sign= is the stand's sign label.
