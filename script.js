@@ -924,9 +924,12 @@ function connectws() {
         SetConnectionStatus(true);
     });
 
-    socket.on('disconnect', function () {
+    // socket.io reconnects this same socket on its own. Calling connectws() again here
+    // opened a second socket beside it, so the count doubled on every drop. The one
+    // case it does not retry is the server closing the socket on purpose.
+    socket.on('disconnect', function (reason) {
         SetConnectionStatus(false);
-        setTimeout(connectws, 5000);
+        if (reason === 'io server disconnect') setTimeout(() => socket.connect(), 5000);
     });
 }
 
